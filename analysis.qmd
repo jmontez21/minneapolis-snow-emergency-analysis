@@ -1,0 +1,101 @@
+---
+title: "project5"
+Author: "Jayden Montez"
+format: html
+editor: visual
+---
+
+-   [x] I typed every character that is in the code file(s) that I submitted (except for what was originally provided in the problem, the professor, other sources allowed by the professor, or circumstances described below).
+-   [ ] I did show my code to another student in the class so that they could help me debug my code.
+-   [ ] I showed my code to another student so I could help them debug their code.
+-   [ ] I used resources that provided worked out solutions to the exact problem or a related problem (e.g. a classmate, stackexchange, Chegg, or other resources not stated here). The link to these is provided here: [LINK](COPY_LINK_HERE)
+-   [x] If necessary, I can verbally explain the purpose of each line, function, or statement in the code.
+-   [x] I did not send my code to another student through email, text, or any other digital communication for the purposes of submitting my unedited code as their own (direct copying purposes).
+-   [ ] I used generative AI in this assignment. I will provide the specific input and output from the AI. The link to each the prompts I used in this assignment is here: [LINK](COPY_LINK_HERE)
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+
+library(tidyverse)
+
+### Pull in the tags dataset:
+
+tags <- read_csv("https://raw.githubusercontent.com/jmzobitz/DST234Datasets/refs/heads/master/Snow_Emergency_Howard_Tags_2024.csv")
+
+### Pull in the tows dataset:
+tows <- read_csv("https://raw.githubusercontent.com/jmzobitz/DST234Datasets/refs/heads/master/Snow_Emergency_Howard_Tows_2024.csv")
+
+### Glimpse both datasets
+
+glimpse(tags)
+
+glimpse(tows)
+
+
+### Do your data visualization thing
+mostTows <- tows |>
+  group_by(TOW_ZONE) |>
+  summarise(most = n()) |>
+  arrange(desc(most))
+
+mostTags <- tags |>
+  group_by(Tow_Zone) |>
+  summarise(total = n()) |>
+  arrange(desc(total))
+
+combinedZones <- mostTags |>
+  inner_join(mostTows, by = c("Tow_Zone" = "TOW_ZONE"))|>
+  left_join(tags[, c("Tow_Zone", "Day")], by = c("Tow_Zone" = "Tow_Zone"))
+  
+ggplot(combinedZones, aes(x = Tow_Zone)) +
+  geom_point(aes(y = total, color = "Tags")) +
+  geom_point(aes(y = most, color = "Tows")) +
+  geom_smooth(aes(y = total, color = "Tags")) + 
+  geom_smooth(aes(y = most, color = "Tows")) +
+  labs(
+    x = "Tow Zone",
+    y = "Total by Zone"
+  ) +
+    facet_wrap(~ Day)
+```
+
+You can add options to executable code like this
+
+```{r}
+mostTows <- tows |>
+  count(TOW_ZONE, name = "tows")|>
+  arrange(desc(tows))
+
+mostTags <- tags |>
+  count(Tow_Zone, name = "tags") |>
+  arrange(desc(tags))
+
+combinedZones <- mostTags |>
+  inner_join(mostTows, by = c("Tow_Zone" = "TOW_ZONE")) |>
+  left_join(tags |> select(Tow_Zone, Day), by = "Tow_Zone") |>
+  distinct()
+
+combinedZones <- combinedZones |>
+  mutate(Tow_Zone = as.character(Tow_Zone))
+
+ggplot(combinedZones, aes(x = fct_reorder(Tow_Zone, - tags))) +
+  geom_col(aes(y = tags, fill = "Tags"), position = "dodge") +
+  geom_col(aes(y = tows, fill= "Tows"), position = "dodge") +
+  facet_wrap(~ Day, ncol = 3) + 
+  scale_fill_manual(
+    name = "Type",
+    values = c("Tags" = "blue", "Tows" = "red"))+ 
+  labs(
+    title = "Tows and Tags during Snow Emergencies",
+    subtitle = "Across Zones",
+    x = "Tow Zone",
+    y = "Count"
+  )
+
+
+```
+
+To change this data graph I decided to switch from points to bars because I thought it would be better for visualization. I decided to reorder the tows to be based on the number of tags. I added better titles and labels for better structure. I used scale_fill_manual() to define the colors for tags and tows
